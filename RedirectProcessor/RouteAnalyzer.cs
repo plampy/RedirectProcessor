@@ -32,6 +32,7 @@ namespace RedirectProcessor
             return ConsolidateChildGraphs(results).Select(g => g.ToString());
         }
 
+        //Expected input format is delimited by " -> ", and contains either one or two paths
         private IEnumerable<Route> Parse(IEnumerable<string> routes)
         {
             return routes.Select(s =>
@@ -46,14 +47,12 @@ namespace RedirectProcessor
 
         private IEnumerable<RedirectGraph> ConsolidateChildGraphs(IEnumerable<RedirectGraph> graphs)
         {
-            //group by terminating route, order by longest chain, take first
-            //note: not accounting for multiple entry points terminating at the same redirect
-            return graphs
-                .GroupBy(g => g.End)
-                .Select(grp => grp
-                    .OrderByDescending(graph => graph.Length)
-                    .First()
-                );
+            foreach (var graph in graphs)
+            {
+                var others = graphs.Except(new[] { graph });
+                if (!others.Any(g => g.ContainsChild(graph)))
+                    yield return graph;
+            }
         }
     }
 }

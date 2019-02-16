@@ -21,6 +21,11 @@ namespace RedirectProcessor.Model
             Paths.Add(route);
         }
 
+        public bool ContainsChild(RedirectGraph graph)
+        {
+            return graph.Paths.All(path => Paths.Contains(path));
+        }
+
         public override string ToString()
         {
             return string.Join(" -> ", Paths);
