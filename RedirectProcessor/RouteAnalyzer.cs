@@ -11,14 +11,7 @@ namespace RedirectProcessor
         public IEnumerable<string> Process(IEnumerable<string> routes)
         {
             var results = new List<RedirectGraph>();
-            var redirectRules = routes.Select(s =>
-            {
-                var parts = s.Split(new string[] { " -> " }, StringSplitOptions.None);
-                var route = new Route { Path = parts[0] };
-                if (parts.Length == 2)
-                    route.RedirectsTo = parts[1];
-                return route;
-            });
+            var redirectRules = Parse(routes);
             var entryPoints = redirectRules.Select(r => r.Path);
             foreach (var entry in entryPoints)
             {
@@ -35,13 +28,32 @@ namespace RedirectProcessor
                 }
                 results.Add(graph);
             }
+
+            return ConsolidateChildGraphs(results).Select(g => g.ToString());
+        }
+
+        private IEnumerable<Route> Parse(IEnumerable<string> routes)
+        {
+            return routes.Select(s =>
+            {
+                var parts = s.Split(new string[] { " -> " }, StringSplitOptions.None);
+                var route = new Route { Path = parts[0] };
+                if (parts.Length == 2)
+                    route.RedirectsTo = parts[1];
+                return route;
+            });
+        }
+
+        private IEnumerable<RedirectGraph> ConsolidateChildGraphs(IEnumerable<RedirectGraph> graphs)
+        {
             //group by terminating route, order by longest chain, take first
-            return results.GroupBy(g => g.End)
+            //note: not accounting for multiple entry points terminating at the same redirect
+            return graphs
+                .GroupBy(g => g.End)
                 .Select(grp => grp
                     .OrderByDescending(graph => graph.Length)
                     .First()
-                )
-                .Select(g => g.ToString());
+                );
         }
     }
 }
